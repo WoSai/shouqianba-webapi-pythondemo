@@ -4,3 +4,4 @@ vendor_sn = None
 vendor_key = None
 terminal_sn = None
 terminal_key = None
+base_url = "https://api.shouqianba.com"
