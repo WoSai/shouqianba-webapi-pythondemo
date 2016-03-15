@@ -1,7 +1,7 @@
 shouqianba
 ==========
 
-### Installing:
+### Installation:
 
 `pip install https://github.com/WoSai/shouqianba-webapi-pythondemo`
 
