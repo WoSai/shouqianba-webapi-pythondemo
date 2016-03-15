@@ -1,3 +1,14 @@
+shouqianba
+==========
+
+### Installing:
+
+`pip install https://github.com/WoSai/shouqianba-webapi-pythondemo`
+
+or
+
+`python setup.py install`
+
 ### Example:
 
 ```python
