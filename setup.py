@@ -23,7 +23,7 @@ setup(
         "Programming Language :: Python",
     ],
     long_description=open(
-        os.path.join(os.path.dirname(__file__), "README"), 'r').read(),
+        os.path.join(os.path.dirname(__file__), "README.md"), 'r').read(),
     install_requires=[
         "requests",
         "simplejson",
