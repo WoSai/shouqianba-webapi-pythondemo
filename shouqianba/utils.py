@@ -33,34 +33,6 @@ def gen_rand_str(length=8, s_type='mixed', prefix=None, postfix=None):
     return ''.join(ret)
 
 
-class Bunch(dict):
-    """
-    >>> d1 = dict(username='admin', password=123456, data={'code': 7788})
-    >>> bunch = Bunch(d1)
-    >>> bunch.username == d1['username']
-    True
-    >>> bunch.data.code == 7788
-    True
-    >>> bunch.name = 'hello'
-    """
-
-    def __getattr__(self, item):
-        try:
-            object.__getattribute__(self, item)
-        except AttributeError:
-            try:
-                value = super(Bunch, self).__getitem__(item)
-            except KeyError:
-                raise AttributeError('attribute named %s was not found' % item)
-            else:
-                if isinstance(value, dict):
-                    return Bunch(value)
-                return value
-
-    def __setattr__(self, key, value):
-        super(Bunch, self).__setitem__(key, value)
-
-
 def md5_str(content):
     """
     计算字符串的MD5值

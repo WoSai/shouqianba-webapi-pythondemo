@@ -8,8 +8,8 @@ try:
     import simplejson as json
 except (ImportError, SyntaxError):
     import json
-from .exception import ServerError, ClientError
-from .utils import Bunch, md5_str, gen_rand_str
+from .exception import ServerError, ClientError, BizResponseError
+from .utils import md5_str, gen_rand_str
 import config
 import log
 
@@ -42,6 +42,16 @@ def status_code_checker(resp):
         raise RuntimeError('Redirection')
     else:
         raise RuntimeError('status code: %d' % status_code)
+
+
+def result_code_checker(j):
+    """
+    检查支付网关2.0的响应中最外层的result_code值,当不等于200时抛出异常
+    :param j:
+    :return:
+    """
+    if j['result_code'] != '200':
+        raise BizResponseError(j)
 
 
 class BaseClient(object):
@@ -110,11 +120,12 @@ class ShouqianbaClient(BaseClient):
         self.terminal_sn = terminal_sn or config.terminal_sn
 
         super(ShouqianbaClient, self).__init__(base_url or config.base_url, **kwargs)
-        self.interceptor = lambda r, j: Bunch(j)
+        self.json_handlers.append(result_code_checker)
+        self.interceptor = lambda r, j: j
 
     def _make_signed_request_params(self, is_terminal_activation=False, body=None, **kwargs):
         """
-        使用terminal/vendor 的sn, key生成签名,直接返回requests.request的请求参数
+        使用terminal/vendor 的sn, key生成签名,返回requests.request的请求参数
         :param is_terminal_activation: 如果是激活终端请求,则使用vendor的信息进行加密
         :param body: 如直接传入body,则不再进行序列化操作
         :param kwargs:
@@ -162,8 +173,8 @@ class ShouqianbaClient(BaseClient):
         req = self._make_signed_request_params(**payload)
 
         ret = self._call_api("/upay/v2/pay", req_kwargs=req)
-        if ret.result_code == "200" and getattr(ret.biz_response.data, 'sn'):
-            self.last_order_sn = ret.biz_response.data.sn
+        if ret['result_code'] == "200" and ret['biz_response']['data'].get('sn', None):
+            self.last_order_sn = ret['biz_response']['data']['sn']
         return ret
 
     def refund(self, sn=None, refund_amount=1, client_sn=None, **kwargs):
@@ -208,22 +219,6 @@ class ShouqianbaClient(BaseClient):
             terminal_sn=self.terminal_sn)
         return self._call_api("/upay/v2/query", req_kwargs=self._make_signed_request_params(**payload))
 
-    def cancel(self, sn=None, client_sn=None):
-        """
-        系统自动撤单(冲正)
-        :param sn:
-        :param client_sn:
-        :return:
-        """
-        if not any((sn, client_sn)):
-            raise ValueError(u"必须传入sn或者client_sn的值")
-        payload = dict(
-            sn=sn,
-            client_sn=client_sn,
-            termianl_sn=self.terminal_sn
-        )
-        return self._call_api("/upay/v2/cancel", req_kwargs=self._make_signed_request_params(**payload))
-
     def revoke(self, sn=None, client_sn=None):
         """
         用户手动撤单(退货)
@@ -259,24 +254,25 @@ class ShouqianbaClient(BaseClient):
             client_sn=kwargs.pop("client_sn", None) or str(int(time.time()*1000)) + gen_rand_str(4, 'digit'),
             subject=kwargs.pop('subject', None) or self._default_goods_subject,
             total_amount=str(total_amount),
-            payway=payway,
+            payway=str(payway),
             terminal_sn=self.terminal_sn,
         )
         payload.update(kwargs)
-        req = self._make_signed_request_params(**kwargs)
+        req = self._make_signed_request_params(**payload)
         ret = self._call_api("/upay/v2/precreate", req_kwargs=req)
-        if ret.result_code == "200" and getattr(ret.biz_response.data, 'sn'):
-            self.last_order_sn = ret.biz_response.data.sn
+        if ret['result_code'] == "200" and ret['biz_response']['data'].get('sn', None):
+            self.last_order_sn = ret['biz_response']['data']['sn']
         return ret
 
-    def activate(self, code):
+    def activate(self, code, override_terminal=False):
         """
         终端激活
         :param code:激活码
         :param device_id: 设备唯一身份ID
         :param os_info: 当前系统信息
         :param sdk_version: SDK版本
-        :param type: 设备类型可以不提供.默认为『2』
+        :param type: 设备类型可以不提供.默认为2
+        :param override_terminal: 是否覆盖当前client的terminal的配置,默认False
         :return:
         """
         payload = dict(
@@ -288,10 +284,10 @@ class ShouqianbaClient(BaseClient):
         req_params = self._make_signed_request_params(True, **payload)
 
         ret = self._call_api('/terminal/activate', req_kwargs=req_params)
-        if ret['result_code'] == "200" and ret['biz_response'].get("terminal_sn") and \
+        if override_terminal and ret['result_code'] == "200" and ret['biz_response'].get("terminal_sn") and \
                 ret['biz_response'].get("terminal_key"):
-            self.terminal_sn = ret.biz_response.terminal_sn
-            self.terminal_key = ret.biz_response.terminal_key
+            self.terminal_sn = ret['biz_response']['terminal_sn']
+            self.terminal_key = ret['biz_response']['terminal_key']
         return ret
 
     def checkin(self):
@@ -314,8 +310,8 @@ class ShouqianbaClient(BaseClient):
         ret = self._call_api('/terminal/checkin', req_kwargs=req_params)
         if ret['result_code'] == "200" and ret['biz_response'].get("terminal_sn") and \
                 ret['biz_response'].get("terminal_key"):
-            self.terminal_sn = ret.biz_response.terminal_sn
-            self.terminal_key = ret.biz_response.terminal_key
+            self.terminal_sn = ret['biz_response']['terminal_sn']
+            self.terminal_key = ret['biz_response']['terminal_key']
         return ret
 
     def upload_log(self, body):
