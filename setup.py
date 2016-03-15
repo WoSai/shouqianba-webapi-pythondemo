@@ -6,11 +6,10 @@ except ImportError:
     from distutils.core import setup
 
 import os
-import shouqianba
 
 setup(
     name='shouqianba',
-    version=shouqianba.__version__,
+    version=open('version', 'r').read().strip(),
     packages=['shouqianba'],
     url='https://github.com/WoSai/shouqianba-webapi-pythondemo',
     license='MIT',
@@ -25,8 +24,9 @@ setup(
     ],
     long_description=open(
         os.path.join(os.path.dirname(__file__), "README.md"), 'r').read(),
-    install_requeires=[
+    install_requires=[
         "requests",
-        "simplejson"
+        "simplejson",
+        "python-json-logger"
     ]
 )
