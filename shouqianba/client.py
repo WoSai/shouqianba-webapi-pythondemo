@@ -173,7 +173,7 @@ class ShouqianbaClient(BaseClient):
         req = self._make_signed_request_params(**payload)
 
         ret = self._call_api("/upay/v2/pay", req_kwargs=req)
-        if ret['result_code'] == "200" and ret['biz_response']['data'].get('sn', None):
+        if ret['result_code'] == "200" and ret['biz_response'].get('data', {}).get('sn', None):
             self.last_order_sn = ret['biz_response']['data']['sn']
         return ret
 
@@ -260,7 +260,7 @@ class ShouqianbaClient(BaseClient):
         payload.update(kwargs)
         req = self._make_signed_request_params(**payload)
         ret = self._call_api("/upay/v2/precreate", req_kwargs=req)
-        if ret['result_code'] == "200" and ret['biz_response']['data'].get('sn', None):
+        if ret['result_code'] == "200" and ret['biz_response'].get('data', {}).get('sn', None):
             self.last_order_sn = ret['biz_response']['data']['sn']
         return ret
 
