@@ -106,8 +106,9 @@ class ShouqianbaClient(BaseClient):
     PAYWAY_BAIFUBAO = '4'  # 百度钱包支付通道
     PAYWAY_JD = '5'  # 京东钱包支付通道
 
-    def __init__(self, base_url=None, vendor_sn=None, vendor_key=None, terminal_sn=None, terminal_key=None, **kwargs):
+    def __init__(self, base_url=None, vendor_sn=None, vendor_key=None, app_id=None, terminal_sn=None, terminal_key=None, **kwargs):
         self.last_order_sn = None
+        self.app_id = app_id or config.app_id
         self._default_goods_subject = "Python Client"
         self.device_id = kwargs.pop('device_id', "50a87771-ca8a-4952-a493-9504c39ab495")  # 设备唯一身份ID
         self.os_info = kwargs.pop("os_info", "Android 5.0")  # 当前系统信息
@@ -277,6 +278,7 @@ class ShouqianbaClient(BaseClient):
         """
         payload = dict(
             code=code,
+            app_id=self.app_id,
             device_id=self.device_id,
             sdk_version=self.sdk_version,
             os_info=self.os_info,
