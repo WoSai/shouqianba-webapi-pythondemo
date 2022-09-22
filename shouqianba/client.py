@@ -80,7 +80,7 @@ class BaseClient(object):
         self.logger.info("start request", extra=dict(method=method, parameters=kwargs, url=url))
         response = requests.request(method, url, **kwargs)
         self.logger.info("got response", extra=dict(
-            response=response.content, status_code=response.status_code,
+            response=response.text, status_code=response.status_code,
             elapsed=response.elapsed.microseconds/1000))  # elapsed并非指完整的请求耗时,而是指获取到headers的耗时
 
         for handler in self.response_handlers:
